@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Расчёт ЗП + РЕВИЗИЯ</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #eef2f5; margin: 0; padding: 12px; color: #1e2a3a; }
+        .container { max-width: 1300px; margin: 0 auto; background: white; padding: 20px 16px; border-radius: 28px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+        h2 { text-align: center; color: #1e4663; margin-top: 0; }
+        .section-title { font-size: 0.85rem; text-transform: uppercase; color: #5e7a93; margin: 24px 0 12px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; }
+        .controls-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+        .input-group { display: flex; flex-direction: column; }
+        label { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+        input, select, textarea { padding: 10px 12px; border-radius: 14px; border: 1px solid #cbd5e1; font-size: 14px; }
+        button { padding: 10px 16px; border-radius: 14px; font-weight: 600; border: none; background: #f1f5f9; cursor: pointer; }
+        button:active { transform: scale(0.96); }
+        .add-btn { background: #28a745; color: white; width: 100%; padding: 12px; }
+        .btn-del-emp { background: #dc3545; color: white; margin-left: 6px; }
+        .btn-add-emp { background: #007bff; color: white; }
+        .btn-payslip { background: #8b5cf6; color: white; margin-left: 10px; }
+        .btn-telegram { background: #26A5E4; color: white; }
+        .table-wrapper { overflow-x: auto; margin: 20px 0; border-radius: 20px; border: 1px solid #e9edf2; }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #ecf3fa; }
+        th { background: #f8fafd; }
+        .edit-btn { background: #ffc107; padding: 6px 12px; border-radius: 8px; }
+        .save-btn { background: #28a745; color: white; padding: 6px 12px; border-radius: 8px; }
+        .delete-btn { background: #dc3545; color: white; padding: 6px 12px; border-radius: 8px; }
+        .cancel-btn { background: #6c757d; color: white; padding: 6px 12px; border-radius: 8px; }
+        .period-summary { background: #f0f6fe; border-radius: 20px; padding: 16px; margin-top: 20px; border-left: 6px solid #007bff; }
+        .period-block { background: white; border-radius: 16px; padding: 12px 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .flex-btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; align-items: center; justify-content: center; }
+        .telegram-settings, .penalty-block, .revision-block { background: #e8f4fd; border-radius: 20px; padding: 16px; margin: 15px 0; border: 1px solid #bddff5; }
+        .revision-block { background: #fef9e6; border-color: #ffe0a3; }
+        .status-msg { font-size: 12px; margin-top: 8px; padding: 6px; border-radius: 8px; }
+        .status-success { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .status-info { background: #cce5ff; color: #004085; }
+        .penalty-table, .revision-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .penalty-table th, .penalty-table td, .revision-table th, .revision-table td { border: 1px solid #ccc; padding: 6px; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            width: 95%;
+            max-width: 900px;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 20px; }
+        .close-modal { background: none; font-size: 28px; cursor: pointer; padding: 0; line-height: 1; }
+        .military-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .military-table th, .military-table td { border: 1px solid #000; padding: 8px; text-align: left; }
+        .military-table .right { text-align: right; }
+        .signature-block { margin-top: 30px; display: flex; justify-content: space-between; font-size: 12px; border-top: 1px dashed #333; padding-top: 15px; flex-wrap: wrap; }
+        .print-btn { background: #2c3e66; color: white; padding: 8px 20px; margin-top: 20px; border-radius: 12px; }
+        @media (max-width: 650px) {
+            .controls-grid { grid-template-columns: 1fr 1fr; }
+            .full-width { grid-column: span 2; }
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            tr { border: 1px solid #e2edf7; margin-bottom: 16px; border-radius: 20px; background: white; padding: 10px; }
+            td { border: none; position: relative; padding-left: 40%; text-align: right; display: flex; justify-content: space-between; align-items: center; }
+            td:before { content: attr(data-label); font-weight: 700; width: 45%; text-align: left; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>📋 Расчёт заработной платы + РЕВИЗИЯ 📋</h2>
+    <p style="text-align:center; margin-top:-10px; font-size:14px;">📆 ЗП за периоды 1–15 / 16–31 + ревизия (премия/дефицит)</p>
+
+    <!-- Сотрудники -->
+    <div class="section-title">👥 Сотрудники</div>
+    <div class="controls-grid">
+        <div class="input-group">
+            <label>Выбрать сотрудника</label>
+            <div style="display: flex;">
+                <select id="employeeSelect" onchange="changeEmployee()" style="flex:1"></select>
+                <button class="btn-del-emp" onclick="deleteEmployee()">🗑️</button>
+                <button class="btn-payslip" onclick="openPayslip()">📄 Расчётный лист</button>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Новый сотрудник</label>
+            <div style="display: flex; gap: 6px;">
+                <input type="text" id="newEmployeeName" placeholder="Имя" style="flex:1">
+                <button class="btn-add-emp" onclick="addEmployee()">➕</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- РЕВИЗИЯ -->
+    <div class="revision-block">
+        <div style="font-weight:bold; margin-bottom:12px;">💰 РЕВИЗИЯ (премия/дефицит)</div>
+        <div style="font-size:13px; margin-bottom:12px; background:#f6f0e0; padding:8px; border-radius:12px;">
+            📌 Формула: <strong>Ревизия = (Сумма за месяц) / (дней в месяце) × (количество смен в периоде)</strong>
+        </div>
+        <div class="controls-grid">
+            <div class="input-group"><label>Сумма за месяц (₽)</label><input type="number" id="revisionTotal" placeholder="+15000 или -5000"></div>
+            <div class="input-group"><label>Комментарий</label><input type="text" id="revisionComment" placeholder="Причина"></div>
+            <div class="input-group"><label>Период</label><select id="revisionPeriod"><option value="first">1-15</option><option value="second">16-31</option><option value="both">Оба периода</option></select></div>
+            <div class="input-group"><label>&nbsp;</label><button onclick="addRevision()">💾 Сохранить ревизию</button></div>
+        </div>
+        <div id="revisionList"></div>
+    </div>
+
+    <!-- Штрафы и поощрения -->
+    <div class="penalty-block">
+        <div style="font-weight:bold; margin-bottom:12px;">⚖️ Штрафы и поощрения</div>
+        <div class="controls-grid">
+            <div class="input-group"><label>Сумма (₽) или %</label><input type="number" id="penaltyAmount" placeholder="+1000 или -500"></div>
+            <div class="input-group"><label>Комментарий</label><input type="text" id="penaltyComment" placeholder="Причина"></div>
+            <div class="input-group"><label>Тип</label><select id="penaltyType"><option value="fix">Фиксированная сумма</option><option value="percent">Процент от чистой выручки</option></select></div>
+            <div class="input-group"><label>Период</label><select id="penaltyPeriod"><option value="both">Оба периода</option><option value="first">1-15</option><option value="second">16-31</option></select></div>
+            <div class="input-group"><label>&nbsp;</label><button onclick="addPenaltyReward()">➕ Добавить</button></div>
+        </div>
+        <div id="penaltyList"></div>
+    </div>
+
+    <!-- Telegram -->
+    <div class="telegram-settings">
+        <div style="font-weight:bold; margin-bottom:12px;">🤖 TELEGRAM (через CORS прокси)</div>
+        <div class="controls-grid">
+            <div class="input-group"><label>Telegram Bot Token</label><input type="text" value="Хранится в Cloudflare Variables/Secrets" readonly style="background:#f0f0f0;"></div>
+            <div class="input-group"><label>Telegram ID сотрудника</label><div style="display:flex; gap:6px;"><input type="text" id="employeeTelegramId" placeholder="123456789"><button class="btn-telegram" onclick="saveTelegramId()">💾 Сохранить</button></div></div>
+        </div>
+        <div class="flex-btns"><button class="btn-telegram" onclick="sendPayslipToTelegram()">📨 Отправить расчётный лист</button><button onclick="testTelegramConnection()">🔍 Тест</button></div>
+        <div id="telegramStatus" class="status-msg" style="display:none;"></div>
+        <div style="font-size:11px;">✅ Telegram отправляется через Cloudflare Pages Function. Bot Token хранится в переменной окружения <strong>TELEGRAM_BOT_TOKEN</strong>, а не в HTML.</div>
+    </div>
+
+    <!-- Фильтр месяц/год -->
+    <div class="section-title">📅 Фильтр</div>
+    <div class="controls-grid">
+        <div class="input-group"><label>Месяц</label><select id="archiveMonth" onchange="applyFilter()"><option value="all">Все</option><option value="0">Январь</option><option value="1">Февраль</option><option value="2">Март</option><option value="3">Апрель</option><option value="4">Май</option><option value="5">Июнь</option><option value="6">Июль</option><option value="7">Август</option><option value="8">Сентябрь</option><option value="9">Октябрь</option><option value="10">Ноябрь</option><option value="11">Декабрь</option></select></div>
+        <div class="input-group"><label>Год</label><select id="archiveYear" onchange="applyFilter()"></select></div>
+        <div class="input-group"><label>&nbsp;</label><button onclick="applyFilter()" style="background:#2c3e66; color:white;">Показать</button></div>
+    </div>
+
+    <!-- Новая смена -->
+    <div class="section-title">➕ Новая смена</div>
+    <div class="controls-grid">
+        <div class="input-group"><label>Дата</label><input type="date" id="shiftDate"></div>
+        <div class="input-group"><label>Выручка (₽)</label><input type="number" id="rev" placeholder="0"></div>
+        <div class="input-group"><label>Кальяны</label><input type="number" id="hook" placeholder="0"></div>
+        <div class="input-group"><label>Чай</label><input type="number" id="tea" placeholder="0"></div>
+        <div class="input-group"><label>Ставка (₽)</label><input type="number" id="rate" value="1500"></div>
+        <div class="full-width"><button class="add-btn" onclick="addShift()">✅ ДОБАВИТЬ СМЕНУ</button></div>
+    </div>
+
+    <!-- Таблица смен -->
+    <div class="table-wrapper">
+        <table id="shiftsTable">
+            <thead>
+                <tr><th>Дата</th><th>Выручка</th><th>Кальяны</th><th>Чай</th><th>Чистая</th><th>З/П</th><th>Действия</th></tr>
+            </thead>
+            <tbody id="shiftTable"></tbody>
+        </table>
+    </div>
+    <div id="periodStats" class="period-summary"></div>
+    <div class="flex-btns">
+        <button type="button" id="exportJsonBtn">💾 Экспорт</button>
+        <button type="button" id="importJsonBtn">📂 Импорт</button>
+        <button onclick="resetAllData()">⚠️ Сбросить всё</button>
+        <button onclick="syncToCloud()">☁️ Сохранить в облако</button>
+        <button onclick="loadFromCloud()">☁️ Загрузить из облака</button>
+    </div>
+</div>
+
+<!-- Модальное окно расчётного листа -->
+<div id="payslipModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3>📄 РАСЧЁТНЫЙ ЛИСТОК</h3><button class="close-modal" onclick="closePayslip()">×</button></div>
+        <div id="payslipBody"></div>
+        <div style="text-align:center;"><button class="print-btn" onclick="window.print()">🖨️ Распечатать / PDF</button></div>
+    </div>
+</div>
+
+<script>
+    // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+    let employees = {};
+    let currentEmployee = "";
+    let editingIndex = -1;
+    let currentFilter = { month: 'all', year: 'all' };
+
+    // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+    function getFilterKey() { return (currentFilter.month !== 'all' && currentFilter.year !== 'all') ? `${currentFilter.year}_${currentFilter.month}` : null; }
+    function daysInMonth(month, year) { return new Date(parseInt(year), parseInt(month)+1, 0).getDate(); }
+    function getPeriodFromDate(dateStr) { 
+        let day = parseInt(dateStr.split('.')[0]); 
+        return day <= 15 ? "first" : "second"; 
+    }
+    function calculateSalary(rev, hook, tea, rate) { 
+        let clean = Math.max(0, rev - hook - tea); 
+        return { clean, salary: rate + (clean * 0.05) }; 
+    }
+
+
+    function toNumber(value, fallback = 0) {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : fallback;
+    }
+
+    function formatNumber(value) {
+        return toNumber(value, 0).toLocaleString('ru-RU');
+    }
+
+    function formatMoney(value) {
+        return `${formatNumber(value)} ₽`;
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function normalizeShift(shift) {
+        const revenue = toNumber(shift?.revenue, 0);
+        const hookah = toNumber(shift?.hookah, 0);
+        const tea = toNumber(shift?.tea, 0);
+        const fixedRate = toNumber(shift?.fixedRate, 0);
+        const calculated = calculateSalary(revenue, hookah, tea, fixedRate);
+
+        return {
+            date: String(shift?.date || ''),
+            revenue,
+            hookah,
+            tea,
+            cleanRevenue: Number.isFinite(Number(shift?.cleanRevenue)) ? Number(shift.cleanRevenue) : calculated.clean,
+            fixedRate,
+            salary: Number.isFinite(Number(shift?.salary)) ? Number(shift.salary) : calculated.salary
+        };
+    }
+
+    function normalizeEmployeeRecord(emp) {
+        const normalized = (emp && typeof emp === 'object') ? emp : {};
+        normalized.shifts = Array.isArray(normalized.shifts) ? normalized.shifts.map(normalizeShift) : [];
+        normalized.penaltiesByMonth = (normalized.penaltiesByMonth && typeof normalized.penaltiesByMonth === 'object') ? normalized.penaltiesByMonth : {};
+        normalized.revisionsByMonth = (normalized.revisionsByMonth && typeof normalized.revisionsByMonth === 'object') ? normalized.revisionsByMonth : {};
+        normalized.telegramId = String(normalized.telegramId || '');
+        normalized.payslipCounter = Math.max(0, toNumber(normalized.payslipCounter, 0));
+        return normalized;
+    }
+
+    function normalizeEmployeesData(data) {
+        const source = (data && typeof data === 'object') ? data : {};
+        const normalized = {};
+        Object.keys(source).forEach(name => {
+            const safeName = String(name).trim();
+            if (safeName) normalized[safeName] = normalizeEmployeeRecord(source[name]);
+        });
+        return normalized;
+    }
+
+    function extractEmployeesPayload(raw) {
+        if (!raw || typeof raw !== 'object') return null;
+
+        // Поддерживаем оба формата:
+        // 1) обычный экспорт: { "Иван": { shifts: [...] } }
+        // 2) облачный бэкап: { employees: {...}, currentEmployee: "Иван" }
+        if (raw.employees && typeof raw.employees === 'object') {
+            return {
+                employees: normalizeEmployeesData(raw.employees),
+                currentEmployee: String(raw.currentEmployee || '')
+            };
+        }
+
+        return {
+            employees: normalizeEmployeesData(raw),
+            currentEmployee: ''
+        };
+    }
+
+
+    // ========== РЕВИЗИЯ ==========
+    function getRevisionAmount(emp, period, shiftsCount) {
+        const key = getFilterKey();
+        if(!key || !emp?.revisionsByMonth?.[key]) return 0;
+        let total = 0;
+        const monthDays = daysInMonth(currentFilter.month, currentFilter.year);
+        for(let r of emp.revisionsByMonth[key]) {
+            const amount = Number(r.totalAmount) || 0;
+            if(r.period === period || r.period === 'both') {
+                total += (amount / monthDays) * shiftsCount;
+            }
+        }
+        return total;
+    }
+
+    function getExactRevisionAmount(emp, period, shiftsCount) {
+        const key = getFilterKey();
+        if(!key || !emp?.revisionsByMonth?.[key]) return 0;
+        let total = 0;
+        const monthDays = daysInMonth(currentFilter.month, currentFilter.year);
+        for(let r of emp.revisionsByMonth[key]) {
+            const amount = Number(r.totalAmount) || 0;
+            if(r.period === period) total += (amount / monthDays) * shiftsCount;
+        }
+        return total;
+    }
+    
+    function addRevision() {
+        if(!currentEmployee) { alert("Выберите сотрудника"); return; }
+        const key = getFilterKey();
+        if(!key) { alert("Выберите конкретный месяц и год в фильтре!"); return; }
+        let amount = parseFloat(document.getElementById('revisionTotal').value);
+        if(isNaN(amount)) { alert("Введите сумму"); return; }
+        let comment = document.getElementById('revisionComment').value.trim() || "Ревизия";
+        let period = document.getElementById('revisionPeriod').value;
+        if(!employees[currentEmployee].revisionsByMonth) employees[currentEmployee].revisionsByMonth = {};
+        if(!employees[currentEmployee].revisionsByMonth[key]) employees[currentEmployee].revisionsByMonth[key] = [];
+        employees[currentEmployee].revisionsByMonth[key].push({ totalAmount: amount, comment, period });
+        saveData();
+        document.getElementById('revisionTotal').value = "";
+        document.getElementById('revisionComment').value = "";
+        renderRevisionList();
+        renderShifts();
+    }
+    
+    function renderRevisionList() {
+        let container = document.getElementById('revisionList');
+        if(!employees[currentEmployee]) { container.innerHTML = ""; return; }
+        const key = getFilterKey();
+        if(!key) { container.innerHTML = "<p>⚠️ Выберите месяц/год</p>"; return; }
+        let revs = employees[currentEmployee].revisionsByMonth?.[key] || [];
+        if(revs.length === 0) { container.innerHTML = "<p>Нет ревизий за этот месяц</p>"; return; }
+        let html = '<table class="revision-table"><thead><tr><th>Сумма</th><th>Комментарий</th><th>Период</th><th></th></tr></thead><tbody>';
+        revs.forEach((r, idx) => {
+            let pText = r.period === 'first' ? '1-15' : (r.period === 'second' ? '16-31' : 'Оба');
+            html += '<tr><td>' + formatMoney(r.totalAmount) + '</td><td>' + escapeHtml(r.comment || '') + '</td><td>' + pText + '</td><td><button class="delete-btn" onclick="deleteRevision(' + idx + ')">🗑️</button></td></tr>';
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+    
+    function deleteRevision(idx) {
+        const key = getFilterKey();
+        if(key && employees[currentEmployee]?.revisionsByMonth?.[key]) {
+            employees[currentEmployee].revisionsByMonth[key].splice(idx,1);
+            saveData();
+            renderRevisionList();
+            renderShifts();
+        }
+    }
+
+    // ========== ШТРАФЫ ==========
+    function addPenaltyReward() {
+        if(!currentEmployee) { alert("Выберите сотрудника"); return; }
+        const key = getFilterKey();
+        if(!key) { alert("Выберите месяц и год в фильтре!"); return; }
+        let amount = parseFloat(document.getElementById('penaltyAmount').value);
+        let comment = document.getElementById('penaltyComment').value.trim();
+        let type = document.getElementById('penaltyType').value;
+        let period = document.getElementById('penaltyPeriod').value;
+        if(isNaN(amount)) { alert("Введите сумму"); return; }
+        if(!employees[currentEmployee].penaltiesByMonth) employees[currentEmployee].penaltiesByMonth = {};
+        if(!employees[currentEmployee].penaltiesByMonth[key]) employees[currentEmployee].penaltiesByMonth[key] = [];
+        employees[currentEmployee].penaltiesByMonth[key].push({ amount, comment, type, period });
+        saveData();
+        document.getElementById('penaltyAmount').value = "";
+        document.getElementById('penaltyComment').value = "";
+        renderPenaltyList();
+        renderShifts();
+    }
+    
+    function getPenaltiesSum(emp, period, cleanTotal) {
+        const key = getFilterKey();
+        if(!key || !emp?.penaltiesByMonth?.[key]) return 0;
+        let sum = 0;
+        for(let p of emp.penaltiesByMonth[key]) {
+            if(p.period === period) {
+                const amount = Number(p.amount) || 0;
+                if(p.type === 'percent') sum += cleanTotal * amount / 100;
+                else sum += amount;
+            }
+        }
+        return sum;
+    }
+    
+    function renderPenaltyList() {
+        let container = document.getElementById('penaltyList');
+        if(!employees[currentEmployee]) { container.innerHTML = ""; return; }
+        const key = getFilterKey();
+        if(!key) { container.innerHTML = "<p>Выберите месяц/год</p>"; return; }
+        let penalties = employees[currentEmployee].penaltiesByMonth?.[key] || [];
+        if(penalties.length === 0) { container.innerHTML = "<p>Нет штрафов/премий</p>"; return; }
+        let html = '<table class="penalty-table"><thead><tr><th>Сумма</th><th>Комментарий</th><th>Тип</th><th>Период</th><th></th></tr></thead><tbody>';
+        penalties.forEach((p, idx) => {
+            const amount = toNumber(p.amount, 0);
+            let amountStr = p.type === 'percent' ? amount + '%' : (amount >=0 ? '+' : '') + formatMoney(amount);
+            let pText = p.period === 'first' ? '1-15' : (p.period === 'second' ? '16-31' : 'Оба');
+            html += '<tr><td>' + amountStr + '</td><td>' + escapeHtml(p.comment || '—') + '</td><td>' + (p.type === 'percent' ? '% от чистой' : 'Фикс') + '</td><td>' + pText + '</td><td><button class="delete-btn" onclick="deletePenalty(' + idx + ')">🗑️</button></td></tr>';
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+    
+    function deletePenalty(idx) {
+        const key = getFilterKey();
+        if(key && employees[currentEmployee]?.penaltiesByMonth?.[key]) {
+            employees[currentEmployee].penaltiesByMonth[key].splice(idx,1);
+            saveData();
+            renderPenaltyList();
+            renderShifts();
+        }
+    }
+
+    // ========== ОСНОВНОЙ РЕНДЕР ==========
+    function renderShifts() {
+        const tbody = document.getElementById("shiftTable");
+        const periodDiv = document.getElementById("periodStats");
+        tbody.innerHTML = "";
+        if (!currentEmployee || !employees[currentEmployee]) {
+            periodDiv.innerHTML = "👈 Выберите или создайте сотрудника";
+            document.getElementById('employeeTelegramId').value = "";
+            return;
+        }
+        document.getElementById('employeeTelegramId').value = employees[currentEmployee].telegramId || "";
+        renderPenaltyList();
+        renderRevisionList();
+
+        let allShifts = employees[currentEmployee].shifts || [];
+        let filtered = allShifts
+            .map((shift, index) => ({ shift, index }))
+            .filter(({ shift }) => {
+                let parts = shift.date.split('.');
+                if(parts.length !== 3) return false;
+                let m = parseInt(parts[1])-1, y = parseInt(parts[2]);
+                return (currentFilter.month === 'all' || parseInt(currentFilter.month) === m) && (currentFilter.year === 'all' || parseInt(currentFilter.year) === y);
+            });
+
+        filtered.forEach(({ shift, index: realIndex }) => {
+            let row = tbody.insertRow();
+            
+            if(editingIndex === realIndex) {
+                row.innerHTML = `
+                    <td data-label="Дата">${escapeHtml(shift.date)}</td>
+                    <td data-label="Выручка"><input type="number" id="edit-rev" value="${shift.revenue}" style="width:100px;"></td>
+                    <td data-label="Кальяны"><input type="number" id="edit-hook" value="${shift.hookah}" style="width:80px;"></td>
+                    <td data-label="Чай"><input type="number" id="edit-tea" value="${shift.tea}" style="width:80px;"></td>
+                    <td data-label="Чистая">—</td>
+                    <td data-label="Ставка"><input type="number" id="edit-rate" value="${shift.fixedRate}" style="width:90px;"></td>
+                    <td data-label="Действия"><button class="save-btn" onclick="saveEdit(${realIndex})">💾</button><button class="cancel-btn" onclick="cancelEdit()">✖️</button></td>
+                `;
+            } else {
+                row.innerHTML = `
+                    <td data-label="Дата">${escapeHtml(shift.date)}</td>
+                    <td data-label="Выручка">${formatMoney(shift.revenue)}</td>
+                    <td data-label="Кальяны">${formatMoney(shift.hookah)}</td>
+                    <td data-label="Чай">${formatMoney(shift.tea)}</td>
+                    <td data-label="Чистая">${formatMoney(shift.cleanRevenue)}</td>
+                    <td data-label="З/П"><b>${formatMoney(Math.round(shift.salary))}</b></td>
+                    <td data-label="Действия"><button class="edit-btn" onclick="startEdit(${realIndex})">✏️</button><button class="delete-btn" onclick="deleteShift(${realIndex})">🗑️</button></td>
+                `;
+            }
+        });
+
+        let p1 = { clean:0, salary:0, shifts:0, fixedSum:0 };
+        let p2 = { clean:0, salary:0, shifts:0, fixedSum:0 };
+        filtered.forEach(({ shift: s }) => {
+            if(getPeriodFromDate(s.date) === "first") { 
+                p1.clean += s.cleanRevenue; p1.salary += s.salary; p1.shifts++; p1.fixedSum += s.fixedRate;
+            } else { 
+                p2.clean += s.cleanRevenue; p2.salary += s.salary; p2.shifts++; p2.fixedSum += s.fixedRate;
+            }
+        });
+        
+        let penalty1 = getPenaltiesSum(employees[currentEmployee], 'first', p1.clean);
+        let penalty2 = getPenaltiesSum(employees[currentEmployee], 'second', p2.clean);
+        let penaltyBoth = getPenaltiesSum(employees[currentEmployee], 'both', p1.clean+p2.clean);
+        let bothShare1 = (p1.clean / (p1.clean+p2.clean || 1));
+        let bothShare2 = (p2.clean / (p1.clean+p2.clean || 1));
+        
+        let finalSalary1 = p1.salary + penalty1 + (penaltyBoth * bothShare1);
+        let finalSalary2 = p2.salary + penalty2 + (penaltyBoth * bothShare2);
+        
+        let rev1 = getRevisionAmount(employees[currentEmployee], 'first', p1.shifts);
+        let rev2 = getRevisionAmount(employees[currentEmployee], 'second', p2.shifts);
+        
+        finalSalary1 += rev1;
+        finalSalary2 += rev2;
+        let total = finalSalary1 + finalSalary2;
+
+        const monthNames = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+        let title = "";
+        if (currentFilter.month !== 'all' && currentFilter.year !== 'all') title = `${monthNames[parseInt(currentFilter.month)]} ${currentFilter.year}`;
+        else if (currentFilter.year !== 'all') title = `${currentFilter.year} год`;
+        else title = "все время";
+
+        periodDiv.innerHTML = `
+            <div style="font-weight:bold;">📊 ЗАРПЛАТА ЗА ПЕРИОДЫ (${title})</div>
+            <div class="period-block">
+                <div>🗓️ 1—15 число</div>
+                <div>Смен: ${p1.shifts}</div>
+                <div>Чистая: ${p1.clean.toLocaleString()} ₽</div>
+                <div>Базовая ЗП: ${Math.round(p1.salary).toLocaleString()} ₽</div>
+                <div>Штрафы/поощрения: ${Math.round(penalty1 + penaltyBoth*bothShare1).toLocaleString()} ₽</div>
+                <div>Ревизия: ${Math.round(rev1).toLocaleString()} ₽</div>
+                <div><strong>Итого к выплате: ${Math.round(finalSalary1).toLocaleString()} ₽</strong></div>
+            </div>
+            <div class="period-block">
+                <div>🗓️ 16—31 число</div>
+                <div>Смен: ${p2.shifts}</div>
+                <div>Чистая: ${p2.clean.toLocaleString()} ₽</div>
+                <div>Базовая ЗП: ${Math.round(p2.salary).toLocaleString()} ₽</div>
+                <div>Штрафы/поощрения: ${Math.round(penalty2 + penaltyBoth*bothShare2).toLocaleString()} ₽</div>
+                <div>Ревизия: ${Math.round(rev2).toLocaleString()} ₽</div>
+                <div><strong>Итого к выплате: ${Math.round(finalSalary2).toLocaleString()} ₽</strong></div>
+            </div>
+            <div style="margin-top:12px; text-align:center; background:#e9f0f9; border-radius:40px; padding:8px;">🏁 ИТОГО К ВЫПЛАТЕ: <b>${Math.round(total).toLocaleString()} ₽</b></div>
+        `;
+    }
+    
+    // ========== РЕДАКТИРОВАНИЕ СМЕН ==========
+    function startEdit(idx) { editingIndex = idx; renderShifts(); }
+    function cancelEdit() { editingIndex = -1; renderShifts(); }
+    function saveEdit(idx) {
+        let rev = Number(document.getElementById("edit-rev").value);
+        let hook = Number(document.getElementById("edit-hook").value) || 0;
+        let tea = Number(document.getElementById("edit-tea").value) || 0;
+        let rate = Number(document.getElementById("edit-rate").value);
+        let shift = employees[currentEmployee]?.shifts?.[idx];
+        if(!shift) { editingIndex = -1; renderShifts(); return; }
+        if(!Number.isFinite(rev) || rev <= 0) return alert("Выручка должна быть больше 0");
+        if(!Number.isFinite(hook) || hook < 0) return alert("Кальяны должны быть числом не меньше 0");
+        if(!Number.isFinite(tea) || tea < 0) return alert("Чай должен быть числом не меньше 0");
+        if(!Number.isFinite(rate) || rate < 0) return alert("Ставка должна быть числом не меньше 0");
+        let { clean, salary } = calculateSalary(rev, hook, tea, rate);
+        shift.revenue = rev; shift.hookah = hook; shift.tea = tea; shift.fixedRate = rate;
+        shift.cleanRevenue = clean; shift.salary = salary;
+        editingIndex = -1;
+        saveData();
+        renderShifts();
+    }
+
+    // ========== CRUD ОПЕРАЦИИ ==========
+    function saveData() { localStorage.setItem('shift_manager_full', JSON.stringify(employees)); localStorage.setItem('current_emp_full', currentEmployee); }
+    
+    function loadLocalData() {
+        let saved = null;
+        try {
+            saved = localStorage.getItem('shift_manager_full');
+            employees = saved ? normalizeEmployeesData(JSON.parse(saved)) : {};
+        } catch (err) {
+            console.error("Ошибка чтения localStorage:", err);
+            employees = {};
+            localStorage.removeItem('shift_manager_full');
+            alert("⚠️ Локальные данные были повреждены и сброшены. Если есть экспорт JSON, импортируйте его заново.");
+        }
+
+        currentEmployee = localStorage.getItem('current_emp_full') || "";
+        if (!employees[currentEmployee]) currentEmployee = "";
+        initSelect();
+        renderShifts();
+    }
+    
+    function initSelect() { 
+        let sel = document.getElementById('employeeSelect'); 
+        sel.innerHTML = '<option value="">-- Выберите --</option>'; 
+        Object.keys(employees).sort().forEach(n => { 
+            let opt = document.createElement('option'); 
+            opt.value = n; 
+            opt.textContent = n; 
+            if(n === currentEmployee) opt.selected = true; 
+            sel.appendChild(opt); 
+        }); 
+    }
+    
+    function changeEmployee() { 
+        currentEmployee = document.getElementById('employeeSelect').value; 
+        editingIndex = -1;
+        saveData(); 
+        renderShifts(); 
+    }
+    
+    function addEmployee() { 
+        let name = document.getElementById('newEmployeeName').value.trim(); 
+        if(!name) return alert("Введите имя сотрудника");
+        if(employees[name]) return alert("Такой сотрудник уже есть");
+        employees[name] = { shifts: [], penaltiesByMonth: {}, revisionsByMonth: {}, telegramId: "", payslipCounter: 0 }; 
+        currentEmployee = name; 
+        saveData(); 
+        initSelect(); 
+        renderShifts(); 
+        document.getElementById('newEmployeeName').value = ""; 
+    }
+    
+    function deleteEmployee() { 
+        if(currentEmployee && confirm(`Удалить ${currentEmployee}?`)) { 
+            delete employees[currentEmployee]; 
+            currentEmployee = ""; 
+            editingIndex = -1;
+            saveData(); 
+            initSelect(); 
+            renderShifts(); 
+        } 
+    }
+    
+    function addShift() { 
+        if(!currentEmployee) return alert("Выберите сотрудника"); 
+        let date = document.getElementById('shiftDate').value; 
+        if(!date) return alert("Укажите дату");
+        let rev = Number(document.getElementById('rev').value);
+        let hook = Number(document.getElementById('hook').value) || 0;
+        let tea = Number(document.getElementById('tea').value) || 0;
+        let rate = Number(document.getElementById('rate').value);
+        if(!Number.isFinite(rev) || rev <= 0) return alert("Выручка должна быть больше 0"); 
+        if(!Number.isFinite(hook) || hook < 0) return alert("Кальяны должны быть числом не меньше 0");
+        if(!Number.isFinite(tea) || tea < 0) return alert("Чай должен быть числом не меньше 0");
+        if(!Number.isFinite(rate) || rate < 0) return alert("Ставка должна быть числом не меньше 0");
+        let {clean, salary} = calculateSalary(rev, hook, tea, rate); 
+        employees[currentEmployee].shifts.unshift({ date: date.split('-').reverse().join('.'), revenue: rev, hookah: hook, tea: tea, cleanRevenue: clean, fixedRate: rate, salary: salary }); 
+        saveData(); 
+        renderShifts(); 
+        document.getElementById('rev').value = ""; document.getElementById('hook').value = ""; document.getElementById('tea').value = "";
+    }
+    
+    function deleteShift(idx) { 
+        if(confirm("Удалить смену?")) { 
+            employees[currentEmployee].shifts.splice(idx,1); 
+            if(editingIndex === idx) editingIndex = -1;
+            saveData(); 
+            renderShifts(); 
+        } 
+    }
+    
+    function applyFilter() { currentFilter.month = document.getElementById('archiveMonth').value; currentFilter.year = document.getElementById('archiveYear').value; renderShifts(); }
+    
+    function exportToJSON() {
+        const payload = {
+            employees,
+            currentEmployee,
+            exportedAt: new Date().toISOString(),
+            app: 'shift_manager_full'
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `shifts_full_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    function importFromJSON() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+
+        input.addEventListener('change', function () {
+            const file = input.files && input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = function (ev) {
+                try {
+                    const raw = JSON.parse(ev.target.result);
+                    const payload = extractEmployeesPayload(raw);
+
+                    if (!payload || !payload.employees || Object.keys(payload.employees).length === 0) {
+                        alert("❌ В JSON не найдены данные сотрудников");
+                        return;
+                    }
+
+                    employees = payload.employees;
+                    currentEmployee = employees[payload.currentEmployee] ? payload.currentEmployee : Object.keys(employees).sort()[0];
+
+                    saveData();
+                    initSelect();
+                    renderShifts();
+                    alert("✅ Импорт успешен");
+                } catch (err) {
+                    console.error("Ошибка импорта JSON:", err);
+                    alert("❌ Неверный или повреждённый JSON-файл");
+                }
+            };
+
+            reader.onerror = function () {
+                alert("❌ Не удалось прочитать файл");
+            };
+
+            reader.readAsText(file);
+        });
+
+        input.click();
+    }
+    function resetAllData() { if(confirm("Удалить ВСЕ данные?")) { employees = {}; currentEmployee = ""; editingIndex = -1; localStorage.removeItem('shift_manager_full'); localStorage.removeItem('current_emp_full'); initSelect(); renderShifts(); } }
+    
+    // ========== ОБЛАЧНЫЕ ФУНКЦИИ CLOUDFLARE ==========
+    const CLOUDFLARE_API = '/api';
+
+    function getCloudPassword(forceAsk = false) {
+        const saved = sessionStorage.getItem('salary_cloud_password') || '';
+        if(saved && !forceAsk) return saved;
+        const password = prompt('Введите пароль облака Cloudflare (DATA_PASSWORD):') || '';
+        if(password) sessionStorage.setItem('salary_cloud_password', password);
+        return password;
+    }
+
+    async function callCloudflareFunction(name, payload = {}) {
+        const response = await fetch(`${CLOUDFLARE_API}/${name}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        let data = null;
+        try { data = await response.json(); } catch(e) { data = {}; }
+
+        if(!response.ok || data?.success === false) {
+            const err = new Error(data?.message || `Ошибка ${response.status}`);
+            err.status = response.status;
+            throw err;
+        }
+        return data;
+    }
+
+    async function syncToCloud() {
+        if(!employees || Object.keys(employees).length === 0) {
+            alert('Нет данных для сохранения');
+            return;
+        }
+
+        try {
+            const password = getCloudPassword();
+            const result = await callCloudflareFunction('save-data', {
+                password,
+                employees,
+                currentEmployee,
+                exportedAt: new Date().toISOString()
+            });
+            alert('✅ ' + (result.message || 'Данные сохранены в Cloudflare'));
+        } catch(e) {
+            if(e.status === 401) sessionStorage.removeItem('salary_cloud_password');
+            alert('❌ Ошибка сохранения в Cloudflare: ' + e.message);
+        }
+    }
+
+    async function loadFromCloud() {
+        try {
+            const password = getCloudPassword();
+            const data = await callCloudflareFunction('load-data', { password });
+
+            if(data && data.employees) {
+                employees = normalizeEmployeesData(data.employees);
+                currentEmployee = employees[data.currentEmployee] ? data.currentEmployee : (Object.keys(employees).sort()[0] || '');
+                saveData();
+                initSelect();
+                renderShifts();
+                alert('✅ Данные загружены из Cloudflare');
+            } else {
+                alert('Нет сохранённых данных в облаке');
+            }
+        } catch(e) {
+            if(e.status === 401) sessionStorage.removeItem('salary_cloud_password');
+            alert('❌ Ошибка загрузки из Cloudflare: ' + e.message);
+        }
+    }
+
+    // ========== TELEGRAM ЧЕРЕЗ CLOUDFLARE PAGES FUNCTION ==========
+    async function sendViaProxy(chatId, text) {
+        if(!chatId) return { ok: false, description: 'Введите Telegram ID' };
+        try {
+            const password = getCloudPassword();
+            return await callCloudflareFunction('send-telegram', { password, chatId, text });
+        } catch(e) {
+            if(e.status === 401) sessionStorage.removeItem('salary_cloud_password');
+            return { ok: false, description: e.message };
+        }
+    }
+
+    async function testTelegramConnection() {
+        let tgId = document.getElementById('employeeTelegramId').value.trim();
+        if(!tgId) { showTelegramStatus('Введите Telegram ID', 'error'); return; }
+        showTelegramStatus('📡 Тест...', 'info');
+        try {
+            let res = await sendViaProxy(tgId, '✅ Тестовое сообщение от системы учёта смен');
+            if(res.ok || res.success) showTelegramStatus('✅ Тест успешен!', 'success');
+            else showTelegramStatus(`❌ Ошибка: ${res.description || res.message || 'Telegram не отправил сообщение'}`, 'error');
+        } catch(e) { showTelegramStatus(`❌ Ошибка: ${e.message}`, 'error'); }
+    }
+
+    async function sendPayslipToTelegram() {
+        if(!currentEmployee) { showTelegramStatus('Выберите сотрудника', 'error'); return; }
+        let tgId = employees[currentEmployee]?.telegramId;
+        if(!tgId) { showTelegramStatus('Нет Telegram ID у сотрудника', 'error'); return; }
+        let month = document.getElementById('archiveMonth').value;
+        let year = document.getElementById('archiveYear').value;
+        if(month === 'all' || year === 'all') { 
+            showTelegramStatus('Выберите конкретный месяц и год в фильтре', 'error'); 
+            return; 
+        }
+        
+        let allShifts = employees[currentEmployee].shifts || [];
+        let filtered = allShifts.filter(s => {
+            let parts = s.date.split('.');
+            if(parts.length !== 3) return false;
+            let m = parseInt(parts[1])-1, y = parseInt(parts[2]);
+            return (parseInt(month) === m) && (parseInt(year) === y);
+        });
+        
+        if(filtered.length === 0) { showTelegramStatus('Нет смен за этот месяц', 'error'); return; }
+        
+        let p1 = { totalClean:0, totalSalary:0, fixedRateSum:0, shiftsCount:0 };
+        let p2 = { totalClean:0, totalSalary:0, fixedRateSum:0, shiftsCount:0 };
+        filtered.forEach(s => {
+            if(getPeriodFromDate(s.date) === 'first') {
+                p1.totalClean += s.cleanRevenue; p1.totalSalary += s.salary; p1.fixedRateSum += s.fixedRate; p1.shiftsCount++;
+            } else {
+                p2.totalClean += s.cleanRevenue; p2.totalSalary += s.salary; p2.fixedRateSum += s.fixedRate; p2.shiftsCount++;
+            }
+        });
+        
+        let penalty1 = getPenaltiesSum(employees[currentEmployee], 'first', p1.totalClean);
+        let penalty2 = getPenaltiesSum(employees[currentEmployee], 'second', p2.totalClean);
+        let penaltyBoth = getPenaltiesSum(employees[currentEmployee], 'both', p1.totalClean + p2.totalClean);
+        let bothShare1 = (p1.totalClean / (p1.totalClean + p2.totalClean || 1));
+        let bothShare2 = (p2.totalClean / (p1.totalClean + p2.totalClean || 1));
+        let finalSalary1 = p1.totalSalary + penalty1 + (penaltyBoth * bothShare1);
+        let finalSalary2 = p2.totalSalary + penalty2 + (penaltyBoth * bothShare2);
+        let rev1 = getRevisionAmount(employees[currentEmployee], 'first', p1.shiftsCount);
+        let rev2 = getRevisionAmount(employees[currentEmployee], 'second', p2.shiftsCount);
+        finalSalary1 += rev1;
+        finalSalary2 += rev2;
+        let finalSalary = finalSalary1 + finalSalary2;
+        
+        if(!employees[currentEmployee].payslipCounter) employees[currentEmployee].payslipCounter = 0;
+        employees[currentEmployee].payslipCounter++;
+        let slipNum = employees[currentEmployee].payslipCounter;
+        saveData();
+        
+        const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+        const monthName = monthNames[parseInt(month)];
+        
+        let penaltiesText = '';
+        const key = getFilterKey();
+        let currentPenalties = (key && employees[currentEmployee]?.penaltiesByMonth?.[key]) ? employees[currentEmployee].penaltiesByMonth[key] : [];
+        if(currentPenalties.length > 0) {
+            penaltiesText = '\n📋 *Штрафы/поощрения:*';
+            for(let p of currentPenalties) {
+                let sign = p.amount >= 0 ? '+' : '';
+                let amountStr = (p.type === 'percent') ? `${p.amount}% от чистой` : `${sign}${formatMoney(p.amount)}`;
+                let periodText = p.period === 'first' ? ' (1-15)' : (p.period === 'second' ? ' (16-31)' : ' (оба периода)');
+                penaltiesText += `\n   • ${p.comment || 'Без комментария'}${periodText}: ${amountStr}`;
+            }
+        }
+        
+        let revisionText = '';
+        let currentRevisions = (key && employees[currentEmployee]?.revisionsByMonth?.[key]) ? employees[currentEmployee].revisionsByMonth[key] : [];
+        if(currentRevisions.length > 0) {
+            revisionText = '\n💰 *Ревизия:*';
+            for(let r of currentRevisions) {
+                let sign = r.totalAmount >= 0 ? '+' : '';
+                let periodText = r.period === 'first' ? ' (1-15)' : (r.period === 'second' ? ' (16-31)' : ' (оба периода)');
+                revisionText += `\n   • ${r.comment}${periodText}: ${sign}${formatMoney(r.totalAmount)}`;
+            }
+        }
+        
+        let text = `📄 *РАСЧЁТНЫЙ ЛИСТОК №${slipNum}*
+👤 *${currentEmployee}*
+📅 ${monthName} ${year}
+
+📊 *НАЧИСЛЕНИЯ:*
+• Оклад: ${formatMoney(p1.fixedRateSum + p2.fixedRateSum)} (${filtered.length} смен)
+• Премия 5%: ${formatMoney(Math.round((p1.totalClean + p2.totalClean) * 0.05))}
+• Базовая ЗП: ${formatMoney(Math.round(p1.totalSalary + p2.totalSalary))}
+${penaltiesText}
+${revisionText}
+💰 *ИТОГО К ВЫПЛАТЕ:* ${formatMoney(Math.round(finalSalary))}
+
+📈 *ДЕТАЛИЗАЦИЯ:*
+▫️ 1-15: чистая ${formatMoney(p1.totalClean)} → ${formatMoney(Math.round(finalSalary1))}
+▫️ 16-31: чистая ${formatMoney(p2.totalClean)} → ${formatMoney(Math.round(finalSalary2))}
+---
+Формула: ЗП = ставка + 5% от чистой + штрафы/поощрения + ревизия за период`;
+        
+        showTelegramStatus('⏳ Отправка...', 'info');
+        try {
+            let res = await sendViaProxy(tgId, text);
+            if(res.ok || res.success) showTelegramStatus(`✅ Отправлено №${slipNum}`, 'success');
+            else showTelegramStatus(`❌ Ошибка: ${res.description || res.message || 'Telegram не отправил сообщение'}`, 'error');
+        } catch(e) { showTelegramStatus(`❌ Ошибка: ${e.message}`, 'error'); }
+    }
+
+    function saveTelegramId() {
+        if(!currentEmployee) { showTelegramStatus("Выберите сотрудника", "error"); return; }
+        let id = document.getElementById('employeeTelegramId').value.trim();
+        if(!id) return;
+        employees[currentEmployee].telegramId = id;
+        saveData();
+        showTelegramStatus(`✅ Сохранено для ${currentEmployee}`, "success");
+    }
+
+    function showTelegramStatus(msg, type) {
+        let div = document.getElementById('telegramStatus');
+        div.style.display = "block";
+        div.textContent = msg;
+        div.className = `status-msg status-${type}`;
+        setTimeout(() => { div.style.display = "none"; }, 5000);
+    }
+    
+    // ========== РАСЧЁТНЫЙ ЛИСТ (ПОЛНАЯ ВЕРСИЯ) ==========
+    function openPayslip() {
+        if(!currentEmployee) { alert("Выберите сотрудника"); return; }
+        if(currentFilter.month === 'all' || currentFilter.year === 'all') {
+            alert("Для расчётного листа выберите конкретный месяц и год в фильтре");
+            return;
+        }
+        
+        let allShifts = employees[currentEmployee].shifts || [];
+        let filtered = allShifts.filter(s => {
+            let parts = s.date.split('.');
+            if(parts.length !== 3) return false;
+            let m = parseInt(parts[1])-1, y = parseInt(parts[2]);
+            return (parseInt(currentFilter.month) === m) && (parseInt(currentFilter.year) === y);
+        });
+        
+        if(filtered.length === 0) { alert("Нет смен за выбранный месяц"); return; }
+        
+        if(!employees[currentEmployee].payslipCounter) employees[currentEmployee].payslipCounter = 0;
+        employees[currentEmployee].payslipCounter++;
+        let slipNum = employees[currentEmployee].payslipCounter;
+        saveData();
+        
+        let p1 = { totalClean:0, totalSalary:0, totalRevenue:0, totalHook:0, totalTea:0, fixedRateSum:0, shiftsCount:0 };
+        let p2 = { totalClean:0, totalSalary:0, totalRevenue:0, totalHook:0, totalTea:0, fixedRateSum:0, shiftsCount:0 };
+        
+        filtered.forEach(s => {
+            if(getPeriodFromDate(s.date) === "first") {
+                p1.totalClean += s.cleanRevenue; p1.totalSalary += s.salary; p1.totalRevenue += s.revenue;
+                p1.totalHook += s.hookah; p1.totalTea += s.tea; p1.fixedRateSum += s.fixedRate; p1.shiftsCount++;
+            } else {
+                p2.totalClean += s.cleanRevenue; p2.totalSalary += s.salary; p2.totalRevenue += s.revenue;
+                p2.totalHook += s.hookah; p2.totalTea += s.tea; p2.fixedRateSum += s.fixedRate; p2.shiftsCount++;
+            }
+        });
+        
+        let penalty1 = getPenaltiesSum(employees[currentEmployee], 'first', p1.totalClean);
+        let penalty2 = getPenaltiesSum(employees[currentEmployee], 'second', p2.totalClean);
+        let penaltyBoth = getPenaltiesSum(employees[currentEmployee], 'both', p1.totalClean+p2.totalClean);
+        let bothShare1 = (p1.totalClean / (p1.totalClean+p2.totalClean || 1));
+        let bothShare2 = (p2.totalClean / (p1.totalClean+p2.totalClean || 1));
+        
+        let fSalary1 = p1.totalSalary + penalty1 + (penaltyBoth * bothShare1);
+        let fSalary2 = p2.totalSalary + penalty2 + (penaltyBoth * bothShare2);
+        
+        let rev1 = getRevisionAmount(employees[currentEmployee], 'first', p1.shiftsCount);
+        let rev2 = getRevisionAmount(employees[currentEmployee], 'second', p2.shiftsCount);
+        
+        fSalary1 += rev1;
+        fSalary2 += rev2;
+        let finalSalary = fSalary1 + fSalary2;
+        
+        const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+        const monthName = monthNames[parseInt(currentFilter.month)];
+        const dateNow = new Date().toLocaleDateString('ru-RU');
+        
+        const key = getFilterKey();
+        let penaltiesList = (key && employees[currentEmployee]?.penaltiesByMonth?.[key]) ? employees[currentEmployee].penaltiesByMonth[key] : [];
+        let firstPenalties = penaltiesList.filter(p => p.period === 'first');
+        let secondPenalties = penaltiesList.filter(p => p.period === 'second');
+        let bothPenalties = penaltiesList.filter(p => p.period === 'both');
+        
+        let penaltiesHtml = "";
+        if(firstPenalties.length > 0) {
+            penaltiesHtml += '<tr><td colspan="2"><strong>Штрафы/поощрения (1-15):</strong></td><td class="right">' + (penalty1 >=0 ? '+' : '') + Math.round(penalty1).toLocaleString() + ' ₽</td><td>' + firstPenalties.length + ' записей</td></tr>';
+            for(let p of firstPenalties) {
+                let sign = p.amount >=0 ? '+' : '';
+                let amountStr = (p.type === 'percent') ? p.amount + '% от чистой' : sign + p.amount.toLocaleString() + ' ₽';
+                penaltiesHtml += '<tr><td colspan="2" style="padding-left:20px;"><strong>' + (p.comment || '—') + '</strong></td><td class="right">' + amountStr + '</td><td></td></tr>';
+            }
+        }
+        if(secondPenalties.length > 0) {
+            penaltiesHtml += '<tr><td colspan="2"><strong>Штрафы/поощрения (16-31):</strong></td><td class="right">' + (penalty2 >=0 ? '+' : '') + Math.round(penalty2).toLocaleString() + ' ₽</td><td>' + secondPenalties.length + ' записей</td></tr>';
+            for(let p of secondPenalties) {
+                let sign = p.amount >=0 ? '+' : '';
+                let amountStr = (p.type === 'percent') ? p.amount + '% от чистой' : sign + p.amount.toLocaleString() + ' ₽';
+                penaltiesHtml += '<tr><td colspan="2" style="padding-left:20px;"><strong>' + (p.comment || '—') + '</strong></td><td class="right">' + amountStr + '</td><td></td></tr>';
+            }
+        }
+        if(bothPenalties.length > 0) {
+            penaltiesHtml += '<tr><td colspan="2"><strong>Штрафы/поощрения (оба периода):</strong></td><td class="right">' + (penaltyBoth >=0 ? '+' : '') + Math.round(penaltyBoth).toLocaleString() + ' ₽</td><td>' + bothPenalties.length + ' записей</td></tr>';
+            for(let p of bothPenalties) {
+                let sign = p.amount >=0 ? '+' : '';
+                let amountStr = (p.type === 'percent') ? p.amount + '% от чистой' : sign + p.amount.toLocaleString() + ' ₽';
+                penaltiesHtml += '<tr><td colspan="2" style="padding-left:20px;"><strong>' + (p.comment || '—') + '</strong></td><td class="right">' + amountStr + '</td><td></td></tr>';
+            }
+        }
+        
+        let revsList = (key && employees[currentEmployee]?.revisionsByMonth?.[key]) ? employees[currentEmployee].revisionsByMonth[key] : [];
+        let revHtml = "";
+        if(revsList.length > 0) {
+            let firstRev = revsList.filter(r => r.period === 'first');
+            let secondRev = revsList.filter(r => r.period === 'second');
+            let bothRev = revsList.filter(r => r.period === 'both');
+            const firstRevAmount = getExactRevisionAmount(employees[currentEmployee], 'first', p1.shiftsCount);
+            const secondRevAmount = getExactRevisionAmount(employees[currentEmployee], 'second', p2.shiftsCount);
+            const bothRevAmount = getExactRevisionAmount(employees[currentEmployee], 'both', p1.shiftsCount + p2.shiftsCount);
+            if(firstRev.length) revHtml += '<tr><td colspan="2"><strong>Ревизия (1-15):</strong></td><td class="right">' + (firstRevAmount >=0 ? '+' : '') + Math.round(firstRevAmount).toLocaleString() + ' ₽</td><td></td></tr>';
+            if(secondRev.length) revHtml += '<tr><td colspan="2"><strong>Ревизия (16-31):</strong></td><td class="right">' + (secondRevAmount >=0 ? '+' : '') + Math.round(secondRevAmount).toLocaleString() + ' ₽</td><td></td></tr>';
+            if(bothRev.length) revHtml += '<tr><td colspan="2"><strong>Ревизия (оба периода):</strong></td><td class="right">' + (bothRevAmount >=0 ? '+' : '') + Math.round(bothRevAmount).toLocaleString() + ' ₽</td><td>по сменам в периодах</td></tr>';
+        }
+        
+        let html = `
+            <div style="text-align:center;"><strong>РАСЧЁТНЫЙ ЛИСТОК № ${slipNum}</strong><br>за ${monthName} ${currentFilter.year} г.</div>
+            <table class="military-table"><thead><tr><th>№</th><th>Вид начисления/удержания</th><th>Сумма (руб.)</th><th>Примечание</th></tr></thead>
+            <tbody>
+                <tr><td>1</td><td><strong>Оклад (ставка за смены)</strong></td><td class="right">${(p1.fixedRateSum + p2.fixedRateSum).toLocaleString()} ₽</td><td>${filtered.length} смен</td></tr>
+                <tr><td>2</td><td><strong>Премия 5% от чистой выручки</strong></td><td class="right">${Math.round((p1.totalClean + p2.totalClean) * 0.05).toLocaleString()} ₽</td><td>5% от чистой</td></tr>
+                ${penaltiesHtml}
+                ${revHtml}
+                <tr style="background:#f2f2f2;"><td colspan="2"><strong>ИТОГО НАЧИСЛЕНО:</strong></td><td class="right"><strong>${Math.round(finalSalary).toLocaleString()} ₽</strong></td><td></td></tr>
+            </tbody>
+        </table>
+
+            <br>
+            <table class="military-table"><thead><tr><th>Период</th><th>Выручка</th><th>Кальяны</th><th>Чай</th><th>Чистая</th><th>Базовая ЗП</th><th>С учётом штрафов</th></tr></thead>
+            <tbody>
+                <tr><td><strong>1-15 число</strong></td><td class="right">${p1.totalRevenue.toLocaleString()}</td><td class="right">${p1.totalHook.toLocaleString()}</td><td class="right">${p1.totalTea.toLocaleString()}</td><td class="right">${p1.totalClean.toLocaleString()}</td><td class="right"><strong>${Math.round(p1.totalSalary).toLocaleString()}</strong></td><td class="right"><strong>${Math.round(fSalary1).toLocaleString()}</strong></td></tr>
+                <tr><td><strong>16-31 число</strong></td><td class="right">${p2.totalRevenue.toLocaleString()}</td><td class="right">${p2.totalHook.toLocaleString()}</td><td class="right">${p2.totalTea.toLocaleString()}</td><td class="right">${p2.totalClean.toLocaleString()}</td><td class="right"><strong>${Math.round(p2.totalSalary).toLocaleString()}</strong></td><td class="right"><strong>${Math.round(fSalary2).toLocaleString()}</strong></td></tr>
+                <tr style="background:#e9ecef;"><td><strong>ВСЕГО</strong></td><td class="right"><strong>${(p1.totalRevenue+p2.totalRevenue).toLocaleString()}</strong></td><td class="right"><strong>${(p1.totalHook+p2.totalHook).toLocaleString()}</strong></td><td class="right"><strong>${(p1.totalTea+p2.totalTea).toLocaleString()}</strong></td><td class="right"><strong>${(p1.totalClean+p2.totalClean).toLocaleString()}</strong></td><td class="right"><strong>${Math.round(p1.totalSalary + p2.totalSalary).toLocaleString()}</strong></td><td class="right"><strong>${Math.round(finalSalary).toLocaleString()}</strong></td></tr>
+            </tbody>
+        </table>
+            <div class="signature-block"><span>Начальник _______________</span><span>Дата: ${dateNow}</span></div>
+            <div class="signature-block"><span>Ознакомлен: _______________ /${escapeHtml(currentEmployee)}/</span><span>М.П.</span></div>
+            <div style="font-size:10px; margin-top:15px;">Формула: ЗП = ставка за смену + 5% чистой выручки + штрафы/поощрения + ревизия за период</div>
+        `;
+        document.getElementById('payslipBody').innerHTML = html;
+        document.getElementById('payslipModal').style.display = "flex";
+    }
+    
+    function closePayslip() { document.getElementById('payslipModal').style.display = "none"; }
+    
+    function fillYearSelect() {
+        const yearSelect = document.getElementById('archiveYear');
+        const curYear = new Date().getFullYear();
+        yearSelect.innerHTML = '<option value="all">Все годы</option>';
+        for(let y = curYear-3; y <= curYear+2; y++) yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+        yearSelect.value = curYear;
+        currentFilter.year = String(curYear);
+    }
+
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    fillYearSelect();
+    loadLocalData();
+    
+    // Глобальные функции для onclick
+    window.applyFilter = applyFilter;
+    window.changeEmployee = changeEmployee;
+    window.addEmployee = addEmployee;
+    window.deleteEmployee = deleteEmployee;
+    window.addShift = addShift;
+    window.deleteShift = deleteShift;
+    window.resetAllData = resetAllData;
+    window.saveTelegramId = saveTelegramId;
+    window.sendPayslipToTelegram = sendPayslipToTelegram;
+    window.testTelegramConnection = testTelegramConnection;
+    window.addPenaltyReward = addPenaltyReward;
+    window.deletePenalty = deletePenalty;
+    window.addRevision = addRevision;
+    window.deleteRevision = deleteRevision;
+    window.syncToCloud = syncToCloud;
+    window.loadFromCloud = loadFromCloud;
+    window.openPayslip = openPayslip;
+    window.closePayslip = closePayslip;
+    window.exportToJSON = exportToJSON;
+    window.importFromJSON = importFromJSON;
+
+    // В Google Apps Script inline onclick иногда теряет доступ к глобальным функциям.
+    // Поэтому для импорта/экспорта дополнительно вешаем обработчики напрямую.
+    const exportJsonBtn = document.getElementById('exportJsonBtn');
+    const importJsonBtn = document.getElementById('importJsonBtn');
+    if (exportJsonBtn) exportJsonBtn.addEventListener('click', exportToJSON);
+    if (importJsonBtn) importJsonBtn.addEventListener('click', importFromJSON);
+
+    window.startEdit = startEdit;
+    window.cancelEdit = cancelEdit;
+    window.saveEdit = saveEdit;
+</script>
+</body>
+</html>
